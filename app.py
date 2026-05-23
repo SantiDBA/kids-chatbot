@@ -213,6 +213,7 @@ with gr.Blocks() as demo:
 
     chatbot = gr.ChatInterface(
         fn=chat,
+        multimodal=False,
         examples=[
             "Contame un chiste! 🎭",
             "Por qué el cielo es azul? 🌌",
