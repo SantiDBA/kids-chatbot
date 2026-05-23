@@ -1,0 +1,27 @@
+name: Build CHAT-O .exe
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Build .exe with PyInstaller
+        run: |
+          pyinstaller --onefile --noconsole --name "CHAT-O" --collect-all gradio --collect-all groq app.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHAT-O.exe
+          path: dist/CHAT-O.exe
