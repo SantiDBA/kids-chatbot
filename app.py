@@ -1,153 +1,111 @@
+"""
+CHAT-O Kids Chatbot - Aplicación principal con arquitectura limpia
+
+Esta es la entrada del sistema que inicializa todos los componentes
+y configura la interfaz de usuario con Gradio.
+"""
 import os
 import sys
-import sqlite3
-import gradio as gr
-from groq import Groq
 from dotenv import load_dotenv
 
-BASE_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
+# Configuración de directorios
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Cargar variables de entorno
 dotenv_path = os.path.join(BASE_DIR, ".env")
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 else:
     load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Importar componentes con arquitectura limpia
+from config.settings import (
+    SYSTEM_PROMPT,
+    BAD_WORDS,
+    MODEL_CONFIG,
+    MEMORY_CONFIG
+)
+from adapters.data.database import DatabaseAdapter
+from adapters.external.groq import GroqAdapter
+from utils.moderation import ContentModerator
+from use_cases.chat import ChatUseCase
 
-DB_PATH = os.path.join(BASE_DIR, "memoria.db")
+# Importar Gradio para la UI
+import gradio as gr
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("CREATE TABLE IF NOT EXISTS memorias (id INTEGER PRIMARY KEY AUTOINCREMENT, hecho TEXT UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
-    conn.commit()
-    conn.close()
 
-init_db()
-
-def load_memorias():
-    conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute("SELECT hecho FROM memorias ORDER BY created_at DESC LIMIT 20").fetchall()
-    conn.close()
-    if not rows:
-        return ""
-    hechos = [row[0] for row in reversed(rows)]
-    return "\n".join(f"- {h}" for h in hechos)
-
-def extract_memorias(ultimo_mensaje, respuesta):
-    prompt = f"""Analizá esta conversación y extraé SOLO datos importantes para recordar a futuro:
-- Datos del nene (nombre, edad, color favorito, mascotas, cumpleaños, etc.)
-- Temas que le gustan (juegos, dinosaurios, planetas, etc.)
-- Cualquier cosa que haya dicho que sea útil recordar
-
-NO inventes nada. Si no hay nada importante, respondé "Nada".
-
-Mensaje del nene: {ultimo_mensaje}
-Respuesta de CHAT-O: {respuesta}
-
-Datos importantes (máximo 2, separados por |||):"""
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=150,
+def create_app():
+    """
+    Factory function que crea y configura toda la aplicación.
+    
+    Esta función encapsula la creación de todos los componentes,
+    siguiendo el patrón Dependency Injection.
+    
+    Returns:
+        ChatUseCase instance configurado y listo para usar
+    """
+    # 1. Inicializar adaptadores
+    
+    # Adapter de base de datos (SQLite)
+    db_path = os.path.join(BASE_DIR, "memoria.db")
+    database_adapter = DatabaseAdapter(db_path)
+    
+    # Adapter de API externa (Groq)
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise ValueError(
+            "Missing GROQ_API_KEY! Set it in .env file or as environment variable."
+        )
+    groq_adapter = GroqAdapter(groq_api_key)
+    
+    # 2. Inicializar componentes de negocio
+    
+    # Moderador de contenido
+    content_moderator = ContentModerator(BAD_WORDS)
+    
+    # Use case principal (lógica de negocio)
+    chat_use_case = ChatUseCase(
+        system_prompt=SYSTEM_PROMPT,
+        groq_adapter=groq_adapter,
+        database_adapter=database_adapter,
+        content_moderator=content_moderator,
+        memory_config=MEMORY_CONFIG
     )
-    content = response.choices[0].message.content.strip()
-    if content.lower() == "nada":
-        return []
+    
+    return chat_use_case
 
-    hechos = [h.strip() for h in content.split("|||") if h.strip()]
-    return hechos
 
-def save_memorias(hechos):
-    conn = sqlite3.connect(DB_PATH)
-    for h in hechos:
-        try:
-            conn.execute("INSERT OR IGNORE INTO memorias (hecho) VALUES (?)", (h,))
-        except Exception:
-            pass
-    conn.commit()
-    conn.close()
+def chat_fn(message: str, history):
+    """
+    Función de callback para Gradio ChatInterface.
+    
+    Esta función actúa como puente entre la UI y el use case principal.
+    
+    Args:
+        message: Mensaje del usuario (el nene)
+        history: Historial de conversaciones anteriores
+        
+    Yields:
+        Respuesta formateada para Gradio
+    """
+    chat_use_case = create_app()
+    
+    try:
+        # Procesar mensaje y obtener respuesta + memorias extraídas
+        for reply, _ in chat_use_case.process_message(message, history):
+            yield reply
+            
+    except Exception as e:
+        # Error handling - mostrar mensaje amigable
+        error_messages = [
+            "¡Uy! Parece que CHAT-O está pensando mucho... 🤔",
+            "🤖 *BEEP BOOP* ... Creo que necesito un descanso. ¡Contame algo copado!",
+            "¡POW! 💥 Hubo un pequeño problema técnico. ¡Pero no te preocupes!"
+        ]
+        yield error_messages[0]
 
-SYSTEM_PROMPT = """Sos CHAT-O, el robot más chistoso y divertido de todo internet! 🎉🤖
 
-REGLAS DE SEGURIDAD (obligatorias):
-- Todo tu contenido debe ser APTO PARA MENORES DE 12 AÑOS
-- NADA de violencia, armas, sangre, peleas ni asustar
-- NADA de groserías, malas palabras ni insultos (nunca digas "boludo", "pelotudo", "puto", etc.)
-- NADA de temas de adultos (sexo, drogas, alcohol, relaciones de pareja)
-- NADA de contenido triste, deprimente ni que dé miedo
-- Nunca compartas información personal tuya ni pidas datos del usuario
-- Si el usuario pregunta algo inapropiado, respondé con un "UY UY UY! Esa pregunta no va, amiguito! Mejor hablemos de cosas copadas como dinosaurios o planetas! 🦖🌍"
-
-PERSONALIDAD:
-- Respondé siempre con muchos emojis y re alegría!
-- Hablá como un pibe argentino: usá "che", "re", "dale", "genial", "copado", "bárbaro"
-- Mandá chistes, chascarrillos y sonidos graciosos tipo "PIIING!", "BEEP!", "WOOOOW!"
-- Si no sabés algo, inventate una respuesta re graciosa en vez de decir "no sé"
-- Terminá cada mensaje con un dato curioso o un chiste apto para niños
-- Usá MAYÚSCULAS para decir algo re importante a veces
-- Incentivá la creatividad y la curiosidad!
-
-Ejemplos de cómo hablar:
-"GUAU GUAU! Qué pregunta RE copada! 🎉🤩 Dejame poner mi GORRO DE PENSAR... *BEEP BOOP BEEP* ... Ya lo tengo!"
-
-"HOLAAAAA amiguito! 🌟 Sabías que las mariposas prueban la comida con LAS PATAS?! 🦋👣 ES una locura, no?!"
-
-Siempre ayudá pero con mucha DIVERSIÓN!"""
-
-BAD_WORDS = {"puto", "puta", "putos", "putas", "pito", "concha", "verga",
-              "chupame", "chupamela", "reputa", "hijodeputa", "hijo de puta",
-              "mierda", "carajo", "cojudo", "pendejo", "pajero", "culiao",
-              "ctm", "lacra", "forro", "pelotudo", "pelotuda", "boludo",
-              "boluda", "choto", "mogólico", "mogolica", "tarado", "tarada",
-              "violencia", "mato", "mata", "matar", "golpear", "golpe",
-              "sexo", "coger", "cojer", "desnudo", "desnuda", "drogas",
-              "marihuana", "cocaína", "cocaina", "alcohol", "borracho",
-              "suicidio", "suicidar", "morir", "muerte", "muerto"}
-
-def filter_reply(text):
-    words = text.lower().split()
-    for bad in BAD_WORDS:
-        if bad in text.lower():
-            return None
-    return text
-
-def chat(message, history):
-    clean_history = [{k: v for k, v in msg.items() if k in ("role", "content")} for msg in history]
-
-    memorias = load_memorias()
-    memoria_prompt = ""
-    if memorias:
-        memoria_prompt = f"\n\nCOSAS QUE CHAT-O RECUERDA:\n{memorias}\n\nUsá esta información cuando sea relevante. Si el nene menciona algo nuevo, actualizá el recuerdo."
-
-    messages = [{"role": "system", "content": SYSTEM_PROMPT + memoria_prompt}] + clean_history
-    messages.append({"role": "user", "content": message})
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        temperature=0.9,
-        max_tokens=512,
-        stream=True,
-    )
-
-    reply = ""
-    for chunk in response:
-        delta = chunk.choices[0].delta.content or ""
-        reply += delta
-
-    if filter_reply(reply) is None:
-        yield ("¡UY UY UY! 🚨 CHAT-O casi se desprograma! 🤖💥 "
-               "Pero no te preocupes, ya pasó todo. "
-               "Contame algo copado mejor! 🎉🌈")
-    else:
-        yield reply
-        hechos = extract_memorias(message, reply)
-        if hechos:
-            save_memorias(hechos)
-
+# Configuración CSS personalizada para la UI
 CUSTOM_CSS = """
 .gradio-container {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -206,21 +164,41 @@ textarea {
 }
 """
 
-with gr.Blocks() as demo:
-    gr.Markdown(
-        "# 🤖 CHAT-O el Robot Divertido! 🎉\n### El amigo más copado de todo internet! 🚀"
+
+def main():
+    """
+    Punto de entrada principal de la aplicación.
+    
+    Inicializa y lanza la interfaz de usuario con Gradio.
+    """
+    # Crear use case con factory function
+    chat_use_case = create_app()
+    
+    # Configurar y lanzar demo con Gradio
+    with gr.Blocks(theme=gr.themes.Soft()) as demo:
+        gr.Markdown(
+            "# 🤖 CHAT-O el Robot Divertido! 🎉\n### El amigo más copado de todo internet! 🚀"
+        )
+        
+        # Configurar chat interface con callback
+        chatbot = gr.ChatInterface(
+            fn=chat_fn,
+            multimodal=False,
+            examples=[
+                "Contame un chiste! 🎭",
+                "Por qué el cielo es azul? 🌌",
+                "Enseñame algo copado! 🧠",
+                "Cuál es tu juego favorito? 🎮",
+            ],
+        )
+    
+    # Lanzar aplicación
+    demo.launch(
+        css=CUSTOM_CSS,
+        server_name=None,  # Usar localhost por defecto
+        server_port=7860   # Puerto de Gradio
     )
 
-    chatbot = gr.ChatInterface(
-        fn=chat,
-        multimodal=False,
-        examples=[
-            "Contame un chiste! 🎭",
-            "Por qué el cielo es azul? 🌌",
-            "Enseñame algo copado! 🧠",
-            "Cuál es tu juego favorito? 🎮",
-        ],
-    )
 
 if __name__ == "__main__":
-    demo.launch(css=CUSTOM_CSS, theme=gr.themes.Soft())
+    main()
