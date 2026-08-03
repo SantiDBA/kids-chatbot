@@ -61,15 +61,22 @@ class ChatUseCase:
         
         memoria_prompt = ""
         if memories:
-            memoria_prompt = f"\n\nCOSAS QUE CHAT-O RECUERDA:\n{memories}\n\n" \
+            memorias_texto = "\n".join(f"- {m}" for m in memories)
+            memoria_prompt = f"\n\nCOSAS QUE CHAT-O RECUERDA:\n{memorias_texto}\n\n" \
                             "Usá esta información cuando sea relevante. " \
                             "Si el nene menciona algo nuevo, actualizá el recuerdo."
         
         # 2. Construir mensajes para la API
-        clean_history = [{
-            k: v for k, v in msg.items() 
-            if k in ("role", "content")
-        } for msg in (history or [])]
+        clean_history = []
+        for msg in (history or []):
+            if isinstance(msg, dict):
+                clean_history.append({
+                    k: v for k, v in msg.items()
+                    if k in ("role", "content")
+                })
+            elif isinstance(msg, (list, tuple)) and len(msg) >= 2:
+                clean_history.append({"role": "user", "content": str(msg[0])})
+                clean_history.append({"role": "assistant", "content": str(msg[1])})
         
         messages = [
             {"role": "system", "content": self.system_prompt + memoria_prompt}
