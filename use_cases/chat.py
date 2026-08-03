@@ -61,7 +61,7 @@ class ChatUseCase:
         
         memoria_prompt = ""
         if memories:
-            memoria_prompt = f"\n\nCOSAS QUE CHAT-O RECUERDA:\n{memorias}\n\n" \
+            memoria_prompt = f"\n\nCOSAS QUE CHAT-O RECUERDA:\n{memories}\n\n" \
                             "Usá esta información cuando sea relevante. " \
                             "Si el nene menciona algo nuevo, actualizá el recuerdo."
         

@@ -27,7 +27,7 @@ class GroqAdapter:
     def chat_complete(
         self,
         messages: list,
-        model: str = "llama-3.3-70b-versatile",
+        model: str = None,
         temperature: float = 0.9,
         max_tokens: int = 512,
         stream: bool = False
@@ -36,7 +36,7 @@ class GroqAdapter:
         
         Args:
             messages: Lista de mensajes del contexto
-            model: Nombre del modelo a usar
+            model: Nombre del modelo a usar (None usa el del entorno, MODEL_NAME)
             temperature: Temperatura del modelo (0.0-2.0)
             max_tokens: Máximo tokens en respuesta
             stream: Si True, devuelve streaming
@@ -44,6 +44,8 @@ class GroqAdapter:
         Returns:
             Response object o generator si stream=True
         """
+        if model is None:
+            model = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,

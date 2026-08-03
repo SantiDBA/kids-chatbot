@@ -175,7 +175,7 @@ def main():
     chat_use_case = create_app()
     
     # Configurar y lanzar demo con Gradio
-    with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(theme=gr.themes.Soft(), css=CUSTOM_CSS) as demo:
         gr.Markdown(
             "# 🤖 CHAT-O el Robot Divertido! 🎉\n### El amigo más copado de todo internet! 🚀"
         )
@@ -194,9 +194,8 @@ def main():
     
     # Lanzar aplicación
     demo.launch(
-        css=CUSTOM_CSS,
-        server_name=None,  # Usar localhost por defecto
-        server_port=7860   # Puerto de Gradio
+        server_name="0.0.0.0",  # Habilitar acceso de red
+        server_port=7860        # Puerto de Gradio
     )
 
 

@@ -50,7 +50,7 @@ BAD_WORDS = {
 # Configuración del modelo
 MODEL_CONFIG = {
     "provider": "groq",
-    "model_name": "llama-3.3-70b-versatile",
+    "model_name": "llama-3.1-8b-instant",
     "temperature_chat": 0.9,
     "max_tokens_chat": 512,
     "temperature_memory": 0.3,
