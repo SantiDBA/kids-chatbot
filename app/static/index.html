@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>🤖 CHAT-O el Robot Divertido</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="chat-header">
+        <div class="header-content">
+            <div class="robot-icon">🤖</div>
+            <h1>CHAT-O el Robot Divertido</h1>
+            <p class="subtitle">Tu amigo copado de internet! 🚀</p>
+        </div>
+    </header>
+
+    <!-- Chat container -->
+    <main class="chat-container">
+        <!-- Messages area -->
+        <section id="messages" class="messages-area" aria-label="Historial del chat">
+            <div id="empty-state" class="empty-state">
+                <p>Hola! Soy CHAT-O, el robot más chistoso! 🎉</p>
+                <p>Contame algo o elegí una idea copada abajo!</p>
+            </div>
+        </section>
+
+        <!-- Suggestion chips -->
+        <section class="suggestions-area">
+            <button class="chip" data-message="Contame un chiste! 🎭">Contame un chiste! 🎭</button>
+            <button class="chip" data-message="Por qué el cielo es azul? 🌌">Por qué el cielo es azul? 🌌</button>
+            <button class="chip" data-message="Enseñame algo copado! 🧠">Enseñame algo copado! 🧠</button>
+            <button class="chip" data-message="Cuál es tu juego favorito? 🎮">Cuál es tu juego favorito? 🎮</button>
+        </section>
+
+        <!-- Input area -->
+        <section class="input-area">
+            <textarea 
+                id="user-input" 
+                placeholder="Escribí algo para CHAT-O..." 
+                aria-label="Mensaje del usuario"
+                rows="1"
+            ></textarea>
+            <button 
+                id="send-btn" 
+                class="send-btn"
+                aria-label="Enviar mensaje"
+            >
+                <span class="btn-icon">➤</span>
+                <span class="btn-text">Enviar</span>
+            </button>
+        </section>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div id="typing-indicator" class="typing-indicator hidden">
+            <p>CHAT-O está pensando...</p>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
