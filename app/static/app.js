@@ -114,6 +114,9 @@
         // Append user message
         appendUserMessage(message);
         
+        userInput.value = '';
+        resizeTextarea();
+        
         // Show typing indicator
         showTyping();
         
