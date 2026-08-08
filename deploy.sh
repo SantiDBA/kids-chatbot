@@ -47,9 +47,10 @@ git push origin "${BRANCH}"
 ssh "${REMOTE_HOST}" "set -euo pipefail
 cd '${REMOTE_DIR}'
 
-# Protección: si .env o memoria.db dejaran de estar ignorados, ABORTAR
+# Protección: si .env, memoria.db o venv dejaran de estar ignorados, ABORTAR
 git check-ignore -q .env || { echo 'ERROR: .env no está en .gitignore, abortando por seguridad' >&2; exit 1; }
 git check-ignore -q memoria.db || { echo 'ERROR: memoria.db no está en .gitignore, abortando por seguridad' >&2; exit 1; }
+git check-ignore -q venv/bin/python || { echo 'ERROR: venv/ no está en .gitignore, abortando por seguridad' >&2; exit 1; }
 
 if [ -n \"\$(git status --porcelain)\" ] && ! git diff --quiet; then
     ts=\$(date +%Y%m%d-%H%M%S)
