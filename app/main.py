@@ -104,6 +104,15 @@ async def root(request: Request) -> FileResponse:
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    """Force revalidation of static assets so deploys are picked up without manual refresh"""
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.post("/api/chat")
 async def chat_endpoint(body: ChatRequest, request: Request) -> StreamingResponse:
     """
