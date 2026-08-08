@@ -36,6 +36,15 @@
 
         <!-- Input area -->
         <section class="input-area">
+            <button 
+                id="emoji-btn"
+                class="emoji-btn"
+                aria-label="Elegir emojis"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="emoji-palette"
+                title="Emojis"
+            >😊</button>
             <textarea 
                 id="user-input" 
                 placeholder="Escribí algo para CHAT-O..." 
@@ -50,6 +59,17 @@
                 <span class="btn-icon">➤</span>
                 <span class="btn-text">Enviar</span>
             </button>
+
+            <!-- Emoji palette -->
+            <div id="emoji-palette" class="emoji-palette hidden" role="dialog" aria-label="Elegí un emoji">
+                <div class="emoji-tabs" role="tablist" aria-label="Categorías de emojis">
+                    <button class="emoji-tab active" data-category="smileys" role="tab" aria-selected="true" aria-label="Caritas">😀</button>
+                    <button class="emoji-tab" data-category="animals" role="tab" aria-selected="false" aria-label="Animales">🐾</button>
+                    <button class="emoji-tab" data-category="food" role="tab" aria-selected="false" aria-label="Comidas">🍕</button>
+                    <button class="emoji-tab" data-category="fun" role="tab" aria-selected="false" aria-label="Diversión">🎮</button>
+                </div>
+                <div id="emoji-grid" class="emoji-grid"></div>
+            </div>
         </section>
 
         <!-- Typing indicator (hidden by default) -->

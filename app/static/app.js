@@ -13,6 +13,18 @@
     const typingIndicator = document.getElementById('typing-indicator');
     const suggestionChips = document.querySelectorAll('.chip');
     const emptyState = document.getElementById('empty-state');
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPalette = document.getElementById('emoji-palette');
+    const emojiGrid = document.getElementById('emoji-grid');
+    const emojiTabs = document.querySelectorAll('.emoji-tab');
+
+    // Emoji groups by category
+    const EMOJI_GROUPS = {
+        smileys: ['😀', '😄', '😂', '😊', '😍', '🤗', '😎', '🥳', '😢', '🤔', '😴', '😜'],
+        animals: ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🐮', '🐵', '🐸'],
+        food: ['🍎', '🍕', '🍔', '🍟', '🍦', '🍩', '🍪', '🍰', '🍫', '🍉', '🥕', '🍇'],
+        fun: ['⭐', '🎉', '🎮', '🎨', '🎵', '🎈', '🎁', '❤️', '🌈', '☀️', '🌟', '🚀']
+    };
 
     // State
     let history = [];
@@ -269,6 +281,68 @@
     }
 
     /**
+     * Render emoji buttons for the given category
+     */
+    function renderEmojiGrid(category) {
+        emojiGrid.innerHTML = '';
+        const emojis = EMOJI_GROUPS[category] || [];
+        emojis.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'emoji-item';
+            btn.textContent = emoji;
+            btn.setAttribute('aria-label', 'Agregar emoji ' + emoji);
+            btn.addEventListener('click', () => insertEmoji(emoji));
+            emojiGrid.appendChild(btn);
+        });
+    }
+
+    /**
+     * Switch active category tab
+     */
+    function setActiveTab(category) {
+        emojiTabs.forEach(tab => {
+            const isActive = tab.dataset.category === category;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        renderEmojiGrid(category);
+    }
+
+    /**
+     * Insert an emoji at the cursor position
+     */
+    function insertEmoji(emoji) {
+        if (userInput.disabled) return;
+        const start = userInput.selectionStart != null ? userInput.selectionStart : userInput.value.length;
+        const end = userInput.selectionEnd != null ? userInput.selectionEnd : userInput.value.length;
+        userInput.setRangeText(emoji, start, end, 'end');
+        userInput.focus();
+        resizeTextarea();
+    }
+
+    /**
+     * Toggle the emoji palette
+     */
+    function toggleEmojiPalette() {
+        const isOpen = !emojiPalette.classList.contains('hidden');
+        if (isOpen) {
+            closeEmojiPalette();
+        } else {
+            emojiPalette.classList.remove('hidden');
+            emojiBtn.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    /**
+     * Close the emoji palette
+     */
+    function closeEmojiPalette() {
+        emojiPalette.classList.add('hidden');
+        emojiBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    /**
      * Initialize event listeners
      */
     function init() {
@@ -310,6 +384,25 @@
             );
             
             sendMessage(message, currentHistory);
+        });
+        
+        // Emoji palette
+        renderEmojiGrid('smileys');
+        emojiBtn.addEventListener('click', toggleEmojiPalette);
+        emojiTabs.forEach(tab => {
+            tab.addEventListener('click', () => setActiveTab(tab.dataset.category));
+        });
+        document.addEventListener('click', (event) => {
+            const clickedInside = emojiPalette.contains(event.target) || emojiBtn.contains(event.target);
+            if (!clickedInside && !emojiPalette.classList.contains('hidden')) {
+                closeEmojiPalette();
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !emojiPalette.classList.contains('hidden')) {
+                closeEmojiPalette();
+                userInput.focus();
+            }
         });
         
         // Focus input on load
