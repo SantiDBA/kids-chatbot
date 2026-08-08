@@ -41,13 +41,20 @@ echo "==> Push de ${BRANCH} a origin"
 git push origin "${BRANCH}"
 
 # 3. Deploy remoto: backup, pull con auto-stash, restart y healthcheck
-#    Seguridad: .env (Groq key) y memoria.db quedan fuera de git — el script
-#    lo verifica, hace backup de TODO (excepto venv/.git), y re-verifica que
-#    siguen intactos después del deploy.
+#    Seguridad: .env (Groq key), memoria.db y venv/ quedan fuera de git — el
+#    script refresca el .gitignore remoto ANTES de validar y stashear, así
+#    nunca vuelve a arrastrar el venv, y re-verifica que todo siga intacto.
 ssh "${REMOTE_HOST}" "set -euo pipefail
 cd '${REMOTE_DIR}'
+git fetch origin
 
-# Protección: si .env, memoria.db o venv dejaran de estar ignorados, ABORTAR
+# Refrescar .gitignore desde origin para validar con las reglas VIGENTES
+git show origin/'${BRANCH}':.gitignore > .gitignore.new
+if [ -s .gitignore.new ]; then
+    mv .gitignore.new .gitignore
+fi
+
+# Protección: si .env o memoria.db dejan de estar ignorados, ABORTAR
 git check-ignore -q .env || { echo 'ERROR: .env no está en .gitignore, abortando por seguridad' >&2; exit 1; }
 git check-ignore -q memoria.db || { echo 'ERROR: memoria.db no está en .gitignore, abortando por seguridad' >&2; exit 1; }
 git check-ignore -q venv/bin/python || { echo 'ERROR: venv/ no está en .gitignore, abortando por seguridad' >&2; exit 1; }
@@ -63,9 +70,10 @@ before=\$(git rev-parse HEAD)
 git pull --ff-only origin '${BRANCH}'
 after=\$(git rev-parse HEAD)
 
-# 2. Verificación de seguridad: config y datos intactos tras el pull
+# Verificación de seguridad: config y datos intactos tras el pull
 [ -s .env ] || { echo 'ERROR: .env desapareció o quedó vacío tras el deploy' >&2; exit 1; }
 [ -f memoria.db ] || echo 'AVISO: memoria.db no existe (datos en otro backend?)'
+[ -x venv/bin/python ] || { echo 'ERROR: venv/bin/python no existe tras el deploy' >&2; exit 1; }
 
 if [ \"\$before\" != \"\$after\" ]; then
     echo '==> Código actualizado, reiniciando chato'
