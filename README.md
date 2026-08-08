@@ -4,7 +4,7 @@ CHAT-O es un chatbot pensado para niños, con una interfaz colorida y divertida.
 
 ## ✨ Funcionalidades
 
-- **Interfaz amigable** con Gradio, colores vibrantes y estilo divertido
+- **Interfaz moderna** con FastAPI y frontend estático, colores vibrantes y estilo divertido
 - **Moderación parental** — bloquea contenido inapropiado, violencia y malas palabras
 - **Memoria persistente** — recuerda datos del nene (nombre, edad, gustos, mascotas, etc.)
 - **Streaming de respuestas** con el modelo `llama-3.3-70b-versatile` de Groq
@@ -22,7 +22,7 @@ GROQ_API_KEY=gsk_tu_api_key_aqui
 
 ```bash
 pip install -r requirements.txt
-python app.py
+venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 7860
 ```
 
 3. Abrí **http://localhost:7860** en el navegador

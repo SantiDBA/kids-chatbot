@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>🤖 CHAT-O el Robot Divertido</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="chat-header">
+        <div class="header-content">
+            <div class="robot-icon">🤖</div>
+            <h1>CHAT-O el Robot Divertido</h1>
+            <p class="subtitle">Tu amigo copado de internet! 🚀</p>
+        </div>
+    </header>
+
+    <!-- Chat container -->
+    <main class="chat-container">
+        <!-- Messages area -->
+        <section id="messages" class="messages-area" aria-label="Historial del chat">
+            <div id="empty-state" class="empty-state">
+                <p>Hola! Soy CHAT-O, el robot más chistoso! 🎉</p>
+                <p>Contame algo o elegí una idea copada abajo!</p>
+            </div>
+        </section>
+
+        <!-- Suggestion chips -->
+        <section class="suggestions-area">
+            <button class="chip" data-message="Contame un chiste! 🎭">Contame un chiste! 🎭</button>
+            <button class="chip" data-message="Por qué el cielo es azul? 🌌">Por qué el cielo es azul? 🌌</button>
+            <button class="chip" data-message="Enseñame algo copado! 🧠">Enseñame algo copado! 🧠</button>
+            <button class="chip" data-message="Cuál es tu juego favorito? 🎮">Cuál es tu juego favorito? 🎮</button>
+        </section>
+
+        <!-- Input area -->
+        <section class="input-area">
+            <button 
+                id="emoji-btn"
+                class="emoji-btn"
+                aria-label="Elegir emojis"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="emoji-palette"
+                title="Emojis"
+            >😊</button>
+            <textarea 
+                id="user-input" 
+                placeholder="Escribí algo para CHAT-O..." 
+                aria-label="Mensaje del usuario"
+                rows="1"
+            ></textarea>
+            <button 
+                id="send-btn" 
+                class="send-btn"
+                aria-label="Enviar mensaje"
+            >
+                <span class="btn-icon">➤</span>
+                <span class="btn-text">Enviar</span>
+            </button>
+
+            <!-- Emoji palette -->
+            <div id="emoji-palette" class="emoji-palette hidden" role="dialog" aria-label="Elegí un emoji">
+                <div class="emoji-tabs" role="tablist" aria-label="Categorías de emojis">
+                    <button class="emoji-tab active" data-category="smileys" role="tab" aria-selected="true" aria-label="Caritas">😀</button>
+                    <button class="emoji-tab" data-category="animals" role="tab" aria-selected="false" aria-label="Animales">🐾</button>
+                    <button class="emoji-tab" data-category="food" role="tab" aria-selected="false" aria-label="Comidas">🍕</button>
+                    <button class="emoji-tab" data-category="fun" role="tab" aria-selected="false" aria-label="Diversión">🎮</button>
+                </div>
+                <div id="emoji-grid" class="emoji-grid"></div>
+            </div>
+        </section>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div id="typing-indicator" class="typing-indicator hidden">
+            <p>CHAT-O está pensando...</p>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
