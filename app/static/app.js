@@ -107,8 +107,7 @@
     function appendAssistantMessage(text) {
         const bubble = document.createElement('div');
         bubble.className = 'message assistant';
-        // Use textContent for safety, then set innerHTML only if we want formatting
-        bubble.textContent = text;
+        bubble.textContent = text || '';
         messagesArea.appendChild(bubble);
         scrollToBottom();
     }
@@ -183,9 +182,10 @@
             // Process one complete SSE event (ends with blank line)
             function handleEvent(eventText) {
                 const lines = eventText.split('\n');
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6);
+                for (const raw of lines) {
+                    const line = raw.trimEnd();
+                    if (!line.startsWith('data:')) continue;
+                    const payload = line.slice(5).trimStart();
                     if (payload === '[DONE]') {
                         streamDone = true;
                         return;
@@ -193,10 +193,10 @@
                     let data = null;
                     try {
                         data = JSON.parse(payload);
-                        if (data.error) {
+                        if (data && data.error) {
                             throw new Error(data.error);
                         }
-                        if (data.reply) {
+                        if (data && typeof data.reply === 'string') {
                             fullReply += data.reply;
                         }
                     } catch (parseError) {
@@ -225,12 +225,15 @@
 
             // Hide typing indicator
             hideTyping();
-            
-            // Append assistant response
-            appendAssistantMessage(fullReply);
-            
+
+            // Append assistant response (fallback si viene vacío)
+            const finalReply = (fullReply && fullReply.trim())
+                ? fullReply
+                : '¡Uy! No escuché bien a CHAT-O. ¿Me lo repetís? 🤖';
+            appendAssistantMessage(finalReply);
+
             // Update history
-            history.push([message, fullReply]);
+            history.push([message, finalReply]);
             saveHistory();
             
         } catch (error) {

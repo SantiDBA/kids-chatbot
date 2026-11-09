@@ -129,10 +129,11 @@ class ChatUseCase:
             yield (self.content_moderator.get_moderation_message(), memories)
             return
         
-        # 5. Extraer memorias de la conversación
+        # 5. Extraer memorias de la conversación (solo si hubo respuesta real)
         memories_extracted = []
-        try:
-            extract_prompt = f"""Analizá esta conversación y extraé SOLO datos importantes para recordar a futuro:
+        if filtered_reply and filtered_reply.strip():
+            try:
+                extract_prompt = f"""Analizá esta conversación y extraé SOLO datos importantes para recordar a futuro:
 - Datos del nene (nombre, edad, color favorito, mascotas, cumpleaños, etc.)
 - Temas que le gustan (juegos, dinosaurios, planetas, etc.)
 - Cualquier cosa que haya dicho que sea útil recordar
@@ -143,15 +144,11 @@ Mensaje del nene: {message}
 Respuesta de CHAT-O: {filtered_reply}
 
 Datos importantes (máximo 2, separados por |||):"""
-            
-            memories_extracted = self.groq_adapter.extract_memories(extract_prompt) or []
-            
-            # 6. Guardar memorias en base de datos
-            if memories_extracted:
-                self.database_adapter.save_memories(memories_extracted)
-            
-        except Exception:
-            # Silenciar errores de extracción de memorias
-            pass
-        
+
+                memories_extracted = self.groq_adapter.extract_memories(extract_prompt) or []
+                if memories_extracted:
+                    self.database_adapter.save_memories(memories_extracted)
+            except Exception:
+                pass
+
         yield (filtered_reply, memories_extracted)
