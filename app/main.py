@@ -52,12 +52,16 @@ async def lifespan(app: FastAPI):
     db_path = os.path.join(REPO_ROOT, "memoria.db")
     database_adapter = DatabaseAdapter(db_path)
     
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
+    llm_api_key = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY")
+    if not llm_api_key:
         raise ValueError(
-            "Missing GROQ_API_KEY! Set it in .env file or as environment variable."
+            "Missing API key! Set LLM_API_KEY (or GROQ_API_KEY) in .env."
         )
-    groq_adapter = GroqAdapter(groq_api_key)
+    groq_adapter = GroqAdapter(
+        api_key=llm_api_key,
+        base_url=os.getenv("LLM_BASE_URL") or None,
+        default_model=os.getenv("LLM_MODEL") or os.getenv("MODEL_NAME") or None,
+    )
     
     # Initialize components
     content_moderator = ContentModerator(BAD_WORDS)

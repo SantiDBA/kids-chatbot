@@ -1,5 +1,5 @@
 """
-External API Adapter - Groq client wrapper
+External API Adapter - OpenAI-compatible LLM client (Groq / Omniroute / etc.)
 """
 import os
 from typing import Optional
@@ -7,23 +7,41 @@ from groq import Groq
 
 
 class GroqAdapter:
-    """Adapter para comunicación con la API de Groq"""
-    
-    def __init__(self, api_key: Optional[str] = None):
-        """Inicializa el adapter con la API key
-        
+    """Adapter para comunicación con APIs OpenAI-compatible (Groq, Omniroute, etc.)."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        default_model: Optional[str] = None,
+    ):
+        """Inicializa el adapter.
+
         Args:
-            api_key: API key de Groq. Si es None, usa la del entorno (GROQ_API_KEY)
+            api_key: API key. Si es None, usa LLM_API_KEY o GROQ_API_KEY.
+            base_url: Base URL OpenAI-compatible (ej. http://localhost:20128/v1
+                para Omniroute). Si es None, usa LLM_BASE_URL o el default de Groq.
+            default_model: Modelo por defecto. Si es None, usa LLM_MODEL o MODEL_NAME.
         """
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
-        
+        self.api_key = api_key or os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY")
+        self.base_url = base_url or os.getenv("LLM_BASE_URL") or None
+        self.default_model = (
+            default_model
+            or os.getenv("LLM_MODEL")
+            or os.getenv("MODEL_NAME")
+            or "llama-3.3-70b-versatile"
+        )
+
         if not self.api_key:
             raise ValueError(
-                "Missing GROQ_API_KEY! Set it in .env file or as environment variable."
+                "Missing API key! Set LLM_API_KEY (or GROQ_API_KEY) in .env."
             )
-        
-        self.client = Groq(api_key=self.api_key)
-    
+
+        client_kwargs = {"api_key": self.api_key}
+        if self.base_url:
+            client_kwargs["base_url"] = self.base_url
+        self.client = Groq(**client_kwargs)
+
     def chat_complete(
         self,
         messages: list,
@@ -32,50 +50,26 @@ class GroqAdapter:
         max_tokens: int = 512,
         stream: bool = False
     ):
-        """Realiza una llamada de chat completion
-        
-        Args:
-            messages: Lista de mensajes del contexto
-            model: Nombre del modelo a usar (None usa el del entorno, MODEL_NAME)
-            temperature: Temperatura del modelo (0.0-2.0)
-            max_tokens: Máximo tokens en respuesta
-            stream: Si True, devuelve streaming
-            
-        Returns:
-            Response object o generator si stream=True
-        """
-        if model is None:
-            model = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
+        """Realiza una llamada de chat completion."""
         response = self.client.chat.completions.create(
-            model=model,
+            model=model or self.default_model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            stream=stream
+            stream=stream,
         )
-        
         return response
-    
+
     def extract_memories(self, prompt: str) -> list:
-        """Extrae memorias basadas en un prompt específico
-        
-        Args:
-            prompt: Prompt para extraer memorias
-            
-        Returns:
-            Lista de memorias extraídas (o lista vacía si no hay nada)
-        """
+        """Extrae memorias basadas en un prompt específico."""
         response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=self.default_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=150,
         )
-        
-        content = response.choices[0].message.content.strip()
-        
+
+        content = (response.choices[0].message.content or "").strip()
         if content.lower() == "nada":
             return []
-        
-        memories = [h.strip() for h in content.split("|||") if h.strip()]
-        return memories  # type: ignore
+        return [h.strip() for h in content.split("|||") if h.strip()]

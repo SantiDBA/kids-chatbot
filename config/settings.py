@@ -47,10 +47,10 @@ BAD_WORDS = {
     "suicidio", "suicidar", "morir", "muerte", "muerto"
 }
 
-# Configuración del modelo
+# Configuración del modelo (se puede sobreescribir via LLM_MODEL / LLM_BASE_URL en .env)
 MODEL_CONFIG = {
-    "provider": "groq",
-    "model_name": "llama-3.1-8b-instant",
+    "provider": "openai-compatible",
+    "model_name": "auto/chat",
     "temperature_chat": 0.9,
     "max_tokens_chat": 512,
     "temperature_memory": 0.3,
