@@ -73,8 +73,14 @@
         </section>
 
         <!-- Typing indicator (hidden by default) -->
-        <div id="typing-indicator" class="typing-indicator hidden">
-            <p>CHAT-O está pensando...</p>
+        <div id="typing-indicator" class="typing-indicator hidden" aria-live="polite" aria-atomic="true">
+            <div class="thinking-bubble">
+                <span class="thinking-robot" aria-hidden="true">🤖</span>
+                <span id="thinking-text" class="thinking-text">CHAT-O está pensando una respuesta...</span>
+                <span class="thinking-dots" aria-hidden="true">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </span>
+            </div>
         </div>
     </main>
 

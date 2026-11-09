@@ -11,6 +11,7 @@
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const typingIndicator = document.getElementById('typing-indicator');
+    const thinkingText = document.getElementById('thinking-text');
     const suggestionChips = document.querySelectorAll('.chip');
     const emptyState = document.getElementById('empty-state');
     const emojiBtn = document.getElementById('emoji-btn');
@@ -29,6 +30,15 @@
     // State
     let history = [];
     let isProcessing = false;
+    let thinkingTimer = null;
+
+    const THINKING_PHRASES = [
+        'CHAT-O está pensando una respuesta...',
+        'CHAT-O está calentando sus circuitos...',
+        'CHAT-O está buscando una idea copada...',
+        'CHAT-O está armando una respuesta divertida...',
+        'CHAT-O está casi listo...'
+    ];
 
     /**
      * Escape HTML to prevent XSS
@@ -104,18 +114,29 @@
     }
 
     /**
-     * Show typing indicator
+     * Show typing indicator with rotating friendly messages
      */
     function showTyping() {
+        let i = 0;
+        if (thinkingText) thinkingText.textContent = THINKING_PHRASES[0];
         typingIndicator.classList.remove('hidden');
         messagesArea.appendChild(typingIndicator);
         scrollToBottom();
+        if (thinkingTimer) clearInterval(thinkingTimer);
+        thinkingTimer = setInterval(() => {
+            i = (i + 1) % THINKING_PHRASES.length;
+            if (thinkingText) thinkingText.textContent = THINKING_PHRASES[i];
+        }, 1800);
     }
 
     /**
      * Hide typing indicator
      */
     function hideTyping() {
+        if (thinkingTimer) {
+            clearInterval(thinkingTimer);
+            thinkingTimer = null;
+        }
         typingIndicator.classList.add('hidden');
     }
 
