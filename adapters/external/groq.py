@@ -78,9 +78,12 @@ class GroqAdapter:
             "max_tokens": max_tokens,
             "stream": stream,
         }
+        reasoning_effort = os.getenv("LLM_REASONING_EFFORT")
+        if reasoning_effort:
+            payload["reasoning_effort"] = reasoning_effort
         url = f"{self.base_url}/chat/completions"
         if stream:
-            client = httpx.Client(timeout=60.0)
+            client = httpx.Client(timeout=90.0)
             req = client.build_request("POST", url, headers=self._headers, json=payload)
             resp = client.send(req, stream=True)
             resp.raise_for_status()
@@ -94,7 +97,7 @@ class GroqAdapter:
 
             return gen()
         else:
-            resp = httpx.post(url, headers=self._headers, json=payload, timeout=60.0)
+            resp = httpx.post(url, headers=self._headers, json=payload, timeout=90.0)
             resp.raise_for_status()
             return _obj(resp.json())
 

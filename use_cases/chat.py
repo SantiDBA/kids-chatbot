@@ -92,7 +92,7 @@ class ChatUseCase:
                 stream=True
             )
             
-            # Consumir streaming
+            # Consumir streaming (ignoramos reasoning_content para no filtrar CoT a chicos)
             reply = ""
             for chunk in response_stream:
                 try:
@@ -102,7 +102,6 @@ class ChatUseCase:
                     choice = choices[0]
                     delta = getattr(choice, "delta", None)
                     if delta is None:
-                        # non-streaming-like chunk fallback
                         msg = getattr(choice, "message", None)
                         text = getattr(msg, "content", None) if msg else None
                     else:
@@ -111,9 +110,22 @@ class ChatUseCase:
                         reply += text
                 except Exception:
                     continue
-            
+
+            # Fallback: si el stream no trajo content (p.ej. modelos reasoning), reintentar sin stream
+            if not reply.strip():
+                try:
+                    resp = self.groq_adapter.chat_complete(
+                        messages=messages,
+                        temperature=self.memory_config.get("temperature_chat", 0.9),
+                        max_tokens=max(self.memory_config.get("max_tokens_chat", 512), 768),
+                        stream=False,
+                    )
+                    msg = getattr(resp.choices[0], "message", None) if getattr(resp, "choices", None) else None
+                    reply = (getattr(msg, "content", None) or "").strip() if msg else ""
+                except Exception:
+                    pass
+
         except Exception as e:
-            # Error handling - devolver mensaje amigable
             error_messages = [
                 "¡Uy! Parece que CHAT-O está pensando mucho... 🤔",
                 "🤖 *BEEP BOOP* ... Creo que necesito un descanso. ¡Contame algo copado!",
@@ -121,7 +133,7 @@ class ChatUseCase:
             ]
             import random
             reply = random.choice(error_messages)
-        
+
         # 4. Moderar respuesta
         filtered_reply = self.content_moderator.filter_content(reply)
         
