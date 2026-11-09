@@ -136,15 +136,19 @@ class ChatUseCase:
 
         # 4. Moderar respuesta
         filtered_reply = self.content_moderator.filter_content(reply)
-        
+
         if filtered_reply is None:
             yield (self.content_moderator.get_moderation_message(), memories)
             return
-        
-        # 5. Extraer memorias de la conversación (solo si hubo respuesta real)
-        memories_extracted = []
+
+        # Entregar respuesta YA (no bloquear al usuario por extracción de memorias)
+        yield (filtered_reply, memories)
+
+        # 5. Extraer memorias en segundo plano best-effort (no bloquea la respuesta)
         if filtered_reply and filtered_reply.strip():
             try:
+                import threading
+
                 extract_prompt = f"""Analizá esta conversación y extraé SOLO datos importantes para recordar a futuro:
 - Datos del nene (nombre, edad, color favorito, mascotas, cumpleaños, etc.)
 - Temas que le gustan (juegos, dinosaurios, planetas, etc.)
@@ -157,10 +161,14 @@ Respuesta de CHAT-O: {filtered_reply}
 
 Datos importantes (máximo 2, separados por |||):"""
 
-                memories_extracted = self.groq_adapter.extract_memories(extract_prompt) or []
-                if memories_extracted:
-                    self.database_adapter.save_memories(memories_extracted)
+                def _save_memories():
+                    try:
+                        extracted = self.groq_adapter.extract_memories(extract_prompt) or []
+                        if extracted:
+                            self.database_adapter.save_memories(extracted)
+                    except Exception:
+                        pass
+
+                threading.Thread(target=_save_memories, daemon=True).start()
             except Exception:
                 pass
-
-        yield (filtered_reply, memories_extracted)

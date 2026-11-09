@@ -129,12 +129,12 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> StreamingRespons
     
     def generate() -> Generator[str, None, None]:
         try:
-            # Process message through use case (yields one tuple per call)
             for reply, _ in chat_use_case.process_message(body.message, body.history):
-                payload = json.dumps({"reply": reply})
-                yield f"data: {payload}\n\n"
-            
-            # Emit done marker
+                # Enviar solo la primera respuesta real (memorias corren en background)
+                if reply is not None and str(reply).strip():
+                    payload = json.dumps({"reply": reply})
+                    yield f"data: {payload}\n\n"
+                    break
             yield "data: [DONE]\n\n"
         except Exception as e:
             logger.error(f"Chat error: {e}", exc_info=True)
