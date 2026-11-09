@@ -177,6 +177,22 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
+.message.assistant strong {
+    font-weight: 800;
+}
+
+.message.assistant em {
+    font-style: italic;
+}
+
+.message.assistant code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(255, 255, 255, 0.45);
+    padding: 0.05em 0.3em;
+    border-radius: 6px;
+    font-size: 0.95em;
+}
+
 /* Suggestions area */
 .suggestions-area {
     display: flex;

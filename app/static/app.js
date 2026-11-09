@@ -45,8 +45,26 @@
      */
     function escapeHtml(text) {
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = text == null ? '' : String(text);
         return div.innerHTML;
+    }
+
+    /**
+     * Render a safe, minimal subset of Markdown (no HTML passthrough).
+     */
+    function renderSafeMarkdown(text) {
+        let html = escapeHtml(text == null ? '' : String(text));
+        // Bold: **text** or __text__
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        // Italic: *text* or _text_ (avoid already-consumed cases)
+        html = html.replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+        html = html.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, '$1<em>$2</em>');
+        // Inline code
+        html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
+        // Line breaks
+        html = html.replace(/\n/g, '<br>');
+        return html;
     }
 
     /**
@@ -107,7 +125,7 @@
     function appendAssistantMessage(text) {
         const bubble = document.createElement('div');
         bubble.className = 'message assistant';
-        bubble.textContent = text || '';
+        bubble.innerHTML = renderSafeMarkdown(text || '');
         messagesArea.appendChild(bubble);
         scrollToBottom();
     }
