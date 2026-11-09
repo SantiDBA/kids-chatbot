@@ -95,8 +95,22 @@ class ChatUseCase:
             # Consumir streaming
             reply = ""
             for chunk in response_stream:
-                delta = chunk.choices[0].delta.content or ""
-                reply += delta
+                try:
+                    choices = getattr(chunk, "choices", None) or []
+                    if not choices:
+                        continue
+                    choice = choices[0]
+                    delta = getattr(choice, "delta", None)
+                    if delta is None:
+                        # non-streaming-like chunk fallback
+                        msg = getattr(choice, "message", None)
+                        text = getattr(msg, "content", None) if msg else None
+                    else:
+                        text = getattr(delta, "content", None)
+                    if text:
+                        reply += text
+                except Exception:
+                    continue
             
         except Exception as e:
             # Error handling - devolver mensaje amigable
