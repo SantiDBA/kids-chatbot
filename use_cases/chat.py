@@ -116,6 +116,7 @@ class ChatUseCase:
             return
         
         # 5. Extraer memorias de la conversación
+        memories_extracted = []
         try:
             extract_prompt = f"""Analizá esta conversación y extraé SOLO datos importantes para recordar a futuro:
 - Datos del nene (nombre, edad, color favorito, mascotas, cumpleaños, etc.)
