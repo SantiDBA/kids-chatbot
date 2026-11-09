@@ -145,7 +145,8 @@ class ChatUseCase:
         yield (filtered_reply, memories)
 
         # 5. Extraer memorias en segundo plano best-effort (no bloquea la respuesta)
-        if filtered_reply and filtered_reply.strip():
+        import os
+        if os.getenv("DISABLE_MEMORY_EXTRACTION") != "1" and filtered_reply and filtered_reply.strip():
             try:
                 import threading
 
